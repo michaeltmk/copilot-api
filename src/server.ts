@@ -35,6 +35,7 @@ server.use(async (c, next) => {
 		// Enhancement 2: Split IPs and check each
 		const ipRaw = c.req.header("x-forwarded-for") || c.req.header("x-real-ip") || c.req.raw.remoteAddress || ""
 		const ipList = ipRaw.split(",").map(ip => ip.trim()).filter(Boolean)
+        console.log("ipRaw:", ipRaw, "ipList:", ipList, "whitelist:", config.whitelistIPs)
 		const isIpAllowed = (ip: string, cidrOrIp: string) => {
 			if (cidrOrIp.includes("/")) {
 				try {
