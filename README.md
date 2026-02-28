@@ -451,3 +451,20 @@ curl -X POST http://localhost:4141/admin/whitelist \
   -H "Content-Type: application/json" \
   -d '{"whitelistIPs": ["192.168.1.100", "10.0.0.1/24"]}'
 ```
+
+### Testing Whitelist and Authentication
+
+To test your API connection and whitelist settings, use curl with the Authorization header and x-forwarded-for set to a whitelisted IP:
+
+```sh
+curl -v \
+  -H "Authorization: Bearer <your-api-token>" \
+  -H "x-forwarded-for: 127.0.0.1" \
+  http://localhost:4141/usage
+```
+
+- Replace `<your-api-token>` with your COPILOT_API_TOKEN value.
+- The x-forwarded-for header should match an IP in COPILOT_WHITELIST_IPS.
+- If your IP is not whitelisted, you will receive a 403 Forbidden error and the server will log the blocked IP and whitelist.
+
+---

@@ -41,7 +41,8 @@ server.use(async (c, next) => {
 		}
 		const allowed = config.whitelistIPs.some((entry) => isIpAllowed(ip, entry))
 		if (!allowed) {
-			return c.text("Forbidden: IP not whitelisted", 403)
+			console.warn(`Blocked request from IP ${ip}: not in whitelist [${config.whitelistIPs?.join(", ")}]`)
+			return c.text(`Forbidden: IP ${ip} not whitelisted`, 403)
 		}
 	}
 	// Password/token check (OpenAI compatible)
