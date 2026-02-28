@@ -420,11 +420,13 @@ Only requests from these IPs will be allowed. Others will receive a 403 Forbidde
 You can also set the API password and whitelist IPs using environment variables:
 
 - `COPILOT_API_TOKEN`: Sets the API password required for all requests.
-- `COPILOT_WHITELIST_IPS`: Comma-separated list of allowed IP addresses (e.g. `127.0.0.1,192.168.1.100`).
+- `COPILOT_WHITELIST_IPS`: Comma-separated list of allowed IP addresses or CIDR ranges (e.g. `127.0.0.1,192.168.1.0/24`).
 
-**Example:**
+**CIDR Example:**
 ```sh
-COPILOT_API_TOKEN=your-secret-password COPILOT_WHITELIST_IPS="127.0.0.1,192.168.1.100" bun run start
+COPILOT_WHITELIST_IPS="127.0.0.1,192.168.1.0/24" bun run start
 ```
+
+You can mix exact IPs and CIDR ranges. Requests from IPs outside these ranges will be blocked.
 
 Environment variables override values in your config file.
