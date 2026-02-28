@@ -24,10 +24,19 @@ server.use(async (c, next) => {
 	const config = getConfig?.() || {}
 	// IP Whitelist check
 	if (Array.isArray(config.whitelistIPs) && config.whitelistIPs.length > 0) {
-		const ip = c.req.header("x-forwarded-for") || c.req.header("x-real-ip") || c.req.raw.remoteAddress || ""
+		// Enhancement 1: Skip whitelist for HTTP requests on port 4141
+		const proto = c.req.header("x-forwarded-proto") || c.req.header("x-scheme") || c.req.url?.startsWith("http:") ? "http" : ""
+		const port = c.req.header("x-forwarded-port") || c.req.header("x-real-port") || (c.req.url?.split(":")[2]?.split("/")[0] || "")
+		if (proto === "http" && port === "4141") {
+			await next()
+			return
+		}
+
+		// Enhancement 2: Split IPs and check each
+		const ipRaw = c.req.header("x-forwarded-for") || c.req.header("x-real-ip") || c.req.raw.remoteAddress || ""
+		const ipList = ipRaw.split(",").map(ip => ip.trim()).filter(Boolean)
 		const isIpAllowed = (ip: string, cidrOrIp: string) => {
 			if (cidrOrIp.includes("/")) {
-				// CIDR support
 				try {
 					const [range, bits] = cidrOrIp.split("/")
 					const ipToLong = (ip: string) => ip.split('.').reduce((acc, octet) => (acc << 8) + parseInt(octet, 10), 0)
@@ -39,10 +48,10 @@ server.use(async (c, next) => {
 			}
 			return ip === cidrOrIp
 		}
-		const allowed = config.whitelistIPs.some((entry) => isIpAllowed(ip, entry))
+		const allowed = ipList.some(ip => config.whitelistIPs.some(entry => isIpAllowed(ip, entry)))
 		if (!allowed) {
-			console.warn(`Blocked request from IP ${ip}: not in whitelist [${config.whitelistIPs?.join(", ")}]`)
-			return c.text(`Forbidden: IP ${ip} not whitelisted`, 403)
+			console.warn(`Blocked request from IP(s) ${ipRaw}: not in whitelist [${config.whitelistIPs?.join(", ")}]`)
+			return c.text(`Forbidden: IP(s) ${ipRaw} not whitelisted`, 403)
 		}
 	}
 	// Password/token check (OpenAI compatible)
