@@ -386,3 +386,85 @@ Please include the following in `CLAUDE.md` (for Claude usage):
 
 - Prohibited from directly asking questions to users, MUST use AskUserQuestion tool.
 - Once you can confirm that the task is complete, MUST use AskUserQuestion tool to make user confirm. The user may respond with feedback if they are not satisfied with the result, which you can use to make improvements and try again.
+
+## API Security: Password & IP Whitelist
+
+You can restrict API access using a password and/or IP whitelist. Configure these in your config file or environment:
+
+### Password Protection
+Set the `apiPassword` property in your config (see src/lib/config.ts) to require a password for all API requests.
+
+**Example:**
+```js
+// in your config file
+{
+  apiPassword: "your-secret-password"
+}
+```
+Clients must send the password using the `x-api-pw` header or `pw` query parameter.
+
+### IP Whitelist
+Set the `whitelistIPs` property to an array of allowed IP addresses.
+
+**Example:**
+```js
+// in your config file
+{
+  whitelistIPs: ["127.0.0.1", "192.168.1.100"]
+}
+```
+Only requests from these IPs will be allowed. Others will receive a 403 Forbidden response.
+
+### Environment Variable Configuration
+
+You can also set the API password and whitelist IPs using environment variables:
+
+- `COPILOT_API_TOKEN`: Sets the API password required for all requests.
+- `COPILOT_WHITELIST_IPS`: Comma-separated list of allowed IP addresses or CIDR ranges (e.g. `127.0.0.1,192.168.1.0/24`).
+
+**CIDR Example:**
+```sh
+COPILOT_WHITELIST_IPS="127.0.0.1,192.168.1.0/24" bun run start
+```
+
+You can mix exact IPs and CIDR ranges. Requests from IPs outside these ranges will be blocked.
+
+Environment variables override values in your config file.
+
+### Dynamically Update Whitelist IPs
+
+You can update the whitelist IPs at runtime using the following endpoint:
+
+**POST /admin/whitelist**
+
+- Body: `{ "whitelistIPs": ["192.168.1.100", "10.0.0.1/24"] }` or `{ "whitelistIPs": "192.168.1.100,10.0.0.1/24" }`
+- Returns: `{ success: true, whitelistIPs: [...] }`
+
+**Note:**
+- IPs set via the `COPILOT_WHITELIST_IPS` environment variable are always preserved and cannot be removed via this endpoint.
+- Only non-env IPs are saved to the config file and can be updated dynamically.
+- CIDR notation is supported.
+
+Example curl:
+```sh
+curl -X POST http://localhost:4141/admin/whitelist \
+  -H "Content-Type: application/json" \
+  -d '{"whitelistIPs": ["192.168.1.100", "10.0.0.1/24"]}'
+```
+
+### Testing Whitelist and Authentication
+
+To test your API connection and whitelist settings, use curl with the Authorization header and x-forwarded-for set to a whitelisted IP:
+
+```sh
+curl -v \
+  -H "Authorization: Bearer <your-api-token>" \
+  -H "x-forwarded-for: 127.0.0.1" \
+  http://localhost:4141/usage
+```
+
+- Replace `<your-api-token>` with your COPILOT_API_TOKEN value.
+- The x-forwarded-for header should match an IP in COPILOT_WHITELIST_IPS.
+- If your IP is not whitelisted, you will receive a 403 Forbidden error and the server will log the blocked IP and whitelist.
+
+---
