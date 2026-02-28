@@ -430,3 +430,24 @@ COPILOT_WHITELIST_IPS="127.0.0.1,192.168.1.0/24" bun run start
 You can mix exact IPs and CIDR ranges. Requests from IPs outside these ranges will be blocked.
 
 Environment variables override values in your config file.
+
+### Dynamically Update Whitelist IPs
+
+You can update the whitelist IPs at runtime using the following endpoint:
+
+**POST /admin/whitelist**
+
+- Body: `{ "whitelistIPs": ["192.168.1.100", "10.0.0.1/24"] }` or `{ "whitelistIPs": "192.168.1.100,10.0.0.1/24" }`
+- Returns: `{ success: true, whitelistIPs: [...] }`
+
+**Note:**
+- IPs set via the `COPILOT_WHITELIST_IPS` environment variable are always preserved and cannot be removed via this endpoint.
+- Only non-env IPs are saved to the config file and can be updated dynamically.
+- CIDR notation is supported.
+
+Example curl:
+```sh
+curl -X POST http://localhost:4141/admin/whitelist \
+  -H "Content-Type: application/json" \
+  -d '{"whitelistIPs": ["192.168.1.100", "10.0.0.1/24"]}'
+```
