@@ -12,6 +12,8 @@ export interface AppConfig {
   >
   useFunctionApplyPatch?: boolean
   compactUseSmallModel?: boolean
+  apiPassword?: string
+  whitelistIPs?: string[]
 }
 
 const gpt5ExplorationPrompt = `## Exploration and reading files
@@ -58,15 +60,25 @@ function readConfigFromDisk(): AppConfig {
   ensureConfigFile()
   try {
     const raw = fs.readFileSync(PATHS.CONFIG_PATH, "utf8")
+    let config: AppConfig
     if (!raw.trim()) {
       fs.writeFileSync(
         PATHS.CONFIG_PATH,
         `${JSON.stringify(defaultConfig, null, 2)}\n`,
         "utf8",
       )
-      return defaultConfig
+      config = defaultConfig
+    } else {
+      config = JSON.parse(raw) as AppConfig
     }
-    return JSON.parse(raw) as AppConfig
+    // Override with env vars if present
+    if (process.env.COPILOT_API_TOKEN) {
+      config.apiPassword = process.env.COPILOT_API_TOKEN
+    }
+    if (process.env.COPILOT_WHITELIST_IPS) {
+      config.whitelistIPs = process.env.COPILOT_WHITELIST_IPS.split(",").map(ip => ip.trim()).filter(Boolean)
+    }
+    return config
   } catch (error) {
     consola.error("Failed to read config file, using default config", error)
     return defaultConfig

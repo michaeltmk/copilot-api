@@ -386,3 +386,45 @@ Please include the following in `CLAUDE.md` (for Claude usage):
 
 - Prohibited from directly asking questions to users, MUST use AskUserQuestion tool.
 - Once you can confirm that the task is complete, MUST use AskUserQuestion tool to make user confirm. The user may respond with feedback if they are not satisfied with the result, which you can use to make improvements and try again.
+
+## API Security: Password & IP Whitelist
+
+You can restrict API access using a password and/or IP whitelist. Configure these in your config file or environment:
+
+### Password Protection
+Set the `apiPassword` property in your config (see src/lib/config.ts) to require a password for all API requests.
+
+**Example:**
+```js
+// in your config file
+{
+  apiPassword: "your-secret-password"
+}
+```
+Clients must send the password using the `x-api-pw` header or `pw` query parameter.
+
+### IP Whitelist
+Set the `whitelistIPs` property to an array of allowed IP addresses.
+
+**Example:**
+```js
+// in your config file
+{
+  whitelistIPs: ["127.0.0.1", "192.168.1.100"]
+}
+```
+Only requests from these IPs will be allowed. Others will receive a 403 Forbidden response.
+
+### Environment Variable Configuration
+
+You can also set the API password and whitelist IPs using environment variables:
+
+- `COPILOT_API_TOKEN`: Sets the API password required for all requests.
+- `COPILOT_WHITELIST_IPS`: Comma-separated list of allowed IP addresses (e.g. `127.0.0.1,192.168.1.100`).
+
+**Example:**
+```sh
+COPILOT_API_TOKEN=your-secret-password COPILOT_WHITELIST_IPS="127.0.0.1,192.168.1.100" bun run start
+```
+
+Environment variables override values in your config file.
